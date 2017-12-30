@@ -3,29 +3,29 @@
        Author: Ashish Chopra
        Updated on: 21 may, 2016
        -----------------------------------------
- 
+
        gulpfile.js is a build automation script for chrome extension projects.
-       It supports both development and production level build lifecycle. 
+       It supports both development and production level build lifecycle.
        Development lifecycle supports copying assets, linting, CSS precompiling,
-       copying templates and HTML and live reloading on any changes. Production 
-       lifecycle generates an optimized build in which code is minified, images are 
+       copying templates and HTML and live reloading on any changes. Production
+       lifecycle generates an optimized build in which code is minified, images are
        optimized etc.
-       
+
        This build script can be used with following commands:
        gulp                    -- default task used during development, switch on live reloading.
        gulp clean              -- cleans the output of last build inside `dist` folder
        gulp build:[options]    -- builds the code for defined options {dev | prod}.
        gulp test               -- executes the test cases (coming soon)
        gulp serve              -- It hosts the `dist` folder on a web server at port 3000 (default)
-       
-       NOTE: Some commands mentioned above are not working right now. 
-       For more read the FUTURE WORK section. These are added on NEED BASIS.   
-    
+
+       NOTE: Some commands mentioned above are not working right now.
+       For more read the FUTURE WORK section. These are added on NEED BASIS.
+
        FUTURE WORK
        1. Support for Unit Testing (if needed).
        2. Support for developing production ready builds.
        6. Fixing linking errors of sourcemaps.
-       
+
  */
 
 
@@ -51,7 +51,7 @@ var gulp = require('gulp'),
 /* DEFINE PATH AND GLOBAL CONSTANTS */
 var port = 3000,
     path = {
-        bower: 'bower_components',
+        // bower: 'bower_components',
         scripts: "src/scripts/**",
         templates: "src/templates/**",
         scss: "src/scss/**/*.scss",
@@ -59,7 +59,7 @@ var port = 3000,
         index: "src/*.html",
         assets: "src/assets/**",
         data: "src/data/**",
-        vendor: 'dist/vendor',
+        // vendor: 'dist/vendor',
         css: 'dist/css',
         dist: "dist",
         root: "dist",
@@ -101,7 +101,7 @@ gulp.task('html', () => {
         .pipe(gulp.dest(path.dist));
 });
 
-// process dummy data files 
+// process dummy data files
 gulp.task('data', () => {
     return gulp.src(path.data, {
         base: 'src'
@@ -148,12 +148,12 @@ gulp.task('js', () => {
 });
 
 //process vendor scripts and styles
-gulp.task('vendor', () => {
-    return gulp.src(mbf(), {
-        base: path.bower
-    })
-        .pipe(gulp.dest(path.vendor));
-});
+// gulp.task('vendor', () => {
+//     return gulp.src(mbf(), {
+//         // base: path.bower
+//     })
+//         .pipe(gulp.dest(path.vendor));
+// });
 
 // watching the changes and fire up the tasks
 gulp.task('watch', () => {
@@ -230,6 +230,6 @@ gulp.task('clean', cleanTask);
 gulp.task('default', defaultTask);
 gulp.task('build:dev', buildDevTask);
 gulp.task('package', packageTask);
-gulp.task('common', ['statics', 'vendor', 'html', 'css', 'js', 'data']);
+gulp.task('common', ['statics',  'html', 'css', 'js', 'data']);
 gulp.task('test', ['lint']);
 gulp.task('serve', ['connect']);

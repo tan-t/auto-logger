@@ -2,6 +2,25 @@
     "name": "chrome-extension-seed",
     "version": "1.0.0",
     "manifest_version": 2,
+    "permissions":[
+      "tabs",
+      "storage",
+      "tabCapture"
+    ],
+    "commands":{
+      "toggle-tab-capture":{
+        "suggested_key":{
+        "default":"Ctrl+Shift+K"
+      },
+      "description":"toggle tab capture function"
+    },
+    "shot":{
+      "suggested_key":{
+      "default":"Ctrl+Shift+L"
+      },
+      "description":"shot current tab"
+      }
+    },
     "browser_action": {
         "default_title": "Chrome Extension Seed",
         "default_popup": "popup.html"
@@ -16,7 +35,8 @@
     "content_scripts": [
         {
             "matches": ["https://*/*", "http://*/*"],
-            "js": ["scripts/contentscript.js"]
+            "js": ["scripts/jquery-3.2.1.slim.min.js","scripts/contentscript.js"]
         }
-    ]
+    ],
+    "options_page":"options.html"
 }
