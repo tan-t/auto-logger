@@ -57,6 +57,18 @@ chrome.commands.onCommand.addListener(function(command) {
       });
     });
     break;
+  case 'config':
+  new Promise(function(resolve, reject) {
+    chrome.tabs.query({currentWindow: true, active : true},(tabArray)=>{
+      var tab = tabArray[0];
+      resolve(tab.id);
+    });
+  }).then(tabId=>{
+    chrome.tabs.sendMessage(tabId,{type:'config'},(res)=>{
+      console.log(res);
+    });
+  });
+  break;
     default:
     console.log('default');
   }

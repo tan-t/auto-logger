@@ -19,8 +19,15 @@
       "default":"Ctrl+Shift+L"
       },
       "description":"shot current tab"
-      }
+      },
+      "config":{
+        "suggested_key":{
+        "default":"Ctrl+Shift+U"
+        },
+        "description":"open config"
+        }
     },
+    
     "browser_action": {
         "default_title": "Chrome Extension Seed",
         "default_popup": "popup.html"
@@ -35,7 +42,8 @@
     "content_scripts": [
         {
             "matches": ["https://*/*", "http://*/*"],
-            "js": ["scripts/jquery-3.2.1.slim.min.js","scripts/contentscript.js"]
+            "js": ["scripts/jquery-3.2.1.slim.min.js","scripts/contentscript.js"],
+            "css":["css/main.css"]
         }
     ],
     "options_page":"options.html"
