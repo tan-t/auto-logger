@@ -1,24 +1,33 @@
 <!DOCTYPE html>
 <html>
-<head><title>My Test Extension Options</title></head>
-<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+
+<head>
+  <title>My Test Extension Options</title>
+  <meta charset="utf-8"/>
+</head>
+
+
 <body>
+  <div id="app">
+    
+      <!-- <div id="status">
+        <div class="alert" role="alert"></div>
+      </div> -->
+      <!-- <button type="button" class="btn btn-primary" id="save">Save</button> -->
 
-  <form>
-    <div class="form-group">
-      <label for="exampleInputEmail1">Email address</label>
-      <input type="text" class="form-control" name="input1" aria-describedby="hint1">
-      <small id="hint1" class="form-text text-muted">We'll never share your email with anyone else.</small>
-    </div>
+  </div>
 
-<div id="status">
-  <div class="alert" role="alert"></div>
-</div>
-<button type="button" class="btn btn-primary" id="save">Save</button>
-</form>
-
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
-<script src="./scripts/jquery-3.2.1.slim.min.js"></script>
-<script src="./scripts/options.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
+    crossorigin="anonymous">
+  <script src="./scripts/jquery-3.2.1.slim.min.js"></script>
+  <script src="./scripts/alasql.min.js"></script>
+  <script src="./scripts/options/config.js"></script>
+  <script src="./scripts/options/config-service.js"></script>
+  <script src="./scripts/options/config-container.js"></script>
+  <script src="./scripts/options.js"></script>
+  <!-- <script src="./scripts/options/create.js"></script>
+  <script src="./scripts/options/insert.js"></script>
+  <script src="./scripts/options/select.js"></script> -->
 </body>
+
 </html>

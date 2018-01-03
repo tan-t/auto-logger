@@ -1,5 +1,5 @@
 console.log('content script');
-AutoLogger = {};
+var AutoLogger = AutoLogger || {};
 AutoLogger.DefaultStorategyOpt = 'NAME';
 
 AutoLogger.pathname = new URL(location.href).pathname;
@@ -48,7 +48,8 @@ AutoLogger.refreshListen = function() {
 new Promise(function (resolve, reject) {
   var defaultOpt = {};
   defaultOpt[AutoLogger.pathname] = {listenTargetItemIds:[]};
-  chrome.storage.sync.get(defaultOpt, (res) => resolve(res));
+  // chrome.storage.sync.get(defaultOpt, (res) => resolve(res));
+  AutoLogger.ConfigService.getOptionFromContentScript(AutoLogger.pathname,defaultOpt).then((res)=>resolve(res));
 }).then(AutoLogger.start);
 
 chrome.runtime.onMessage.addListener((request,sender,sendResponse)=>{
@@ -274,9 +275,8 @@ AutoLogger.enterDocument = function (option) {
       }).name = $(tr).find('.auto-logger-name').val();
     });
     var innerModel = { matcher, listenTargetItemIds,storategyOpt };
-    var model = {};
-    model[matcher] = innerModel;
-    chrome.storage.sync.set(model);
+    // chrome.storage.sync.set(model);
+    AutoLogger.ConfigService.updateOptionFromContentScript(innerModel);
     $(AutoLogger.SELECTOR).remove();
     AutoLogger.option = innerModel;
     AutoLogger.refreshListen();

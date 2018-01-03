@@ -42,7 +42,7 @@
     "content_scripts": [
         {
             "matches": ["https://*/*", "http://*/*"],
-            "js": ["scripts/jquery-3.2.1.slim.min.js","scripts/contentscript.js"],
+            "js": ["scripts/jquery-3.2.1.slim.min.js","scripts/alasql.min.js","scripts/options/config-service.js","scripts/contentscript.js"],
             "css":["css/main.css"]
         }
     ],
