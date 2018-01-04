@@ -10,3 +10,10 @@
 .auto-logger-outline {
     outline: 5px solid red;
 }
+
+#auto-logger-config-panel {
+    width:100%;
+    background:#fff;
+    top:1500px;
+    @import "bootstrap";
+}

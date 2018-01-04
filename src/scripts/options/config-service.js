@@ -4,8 +4,9 @@ AutoLogger.ConfigService = {
     mockDao: {
         updateConfig(config) {
             return new Promise((resolve, reject) => {
-                localStorage.setItem('autologger_config', JSON.stringify(config));
-                resolve();
+                chrome.storage.sync.set({'autologger_config': config}, () =>{
+                    resolve();
+                });
             });
         },
         validateDuplication(url) {
@@ -19,21 +20,14 @@ AutoLogger.ConfigService = {
             });
         },
         getConfig() {
+            var defConfig = {
+                enabled:false,
+                items:[]
+            };
             return new Promise((resolve, reject) => {
-                // resolve(JSON.parse(localStorage.getItem('autologger_config')));
-                resolve(
-                    {
-                        enabled: false, items: [{
-                            url: 'hoge',
-                            dtls: []
-                        },
-                        {
-                            url: 'fuga',
-                            dtls: []
-                        },
-                        ]
-                    }
-                )
+                chrome.storage.sync.get({'autologger_config':defConfig}, (res) =>{
+                    resolve(res['autologger_config']);
+                });
             });
         },
         getConfigByUrl(url) {
@@ -61,42 +55,23 @@ AutoLogger.ConfigService = {
             'focusout':'フォーカスアウト'
         }
     },
-    getOptionFromContentScript(url,defaultOpt) {
+    getConfig(url,defaultOpt) {
         return this.mockDao.getConfigByUrl(url).then(resArr=>{
             if(resArr.length <= 0){
                 return defaultOpt;
             }
-            var res = resArr[0];
-            res.matcher = res.url;
-            var listenTargetItemIds = {};
-            res.dtls.forEach((dtl)=>{
-                if(dtl.event in listenTargetItemIds){
-                    listenTargetItemIds[dtl.event].push(dtl);
-                } else {
-                    listenTargetItemIds[dtl.event] = [dtl];
-                }
-            });
-            res.listenTargetItemIds = listenTargetItemIds;
-            var ret = {};
-            ret[url] = res;
-            return ret;
+            return resArr[0];
         });
     },
-    updateOptionFromContentScript(option) {
-        var listenTargetItemIds = option.listenTargetItemIds;
-        var dtls = [];
-        Object.keys(listenTargetItemIds).forEach(key=>{
-            listenTargetItemIds[key].forEach((dtl)=>{
-              dtls.push($.extend(dtl,{event:key}));
-            });
-          });
-          var item = {url:option.matcher,dtls};
+    updateAnOption(item) {
         return this.insertItem(item).then(()=>{
+            console.log(item)
             console.log('inserted successfully')
         }).catch(()=>{
             return this.updateItem(item).then(()=>{
+                console.log(item)
                 console.log('updated successfully');
             });
         })
-    }
+    },
 };

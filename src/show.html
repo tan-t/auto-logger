@@ -5,9 +5,15 @@
   <title>My Test Extension Options</title></head>
 <body>
 
+    <nav class="navbar navbar-light bg-light">
+        <form class="form-inline">
+          <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search">
+          <button class="btn btn-outline-success my-2 my-sm-0" type="button" id="search-btn">Search</button>
+        </form>
+      </nav>
 <div>
+  
   <div class="col-md-4"><video autoplay style="display:none" width="300px" height="200px"></video><canvas width="3200px" height="2400px" style="display:none"></canvas></div>
-    <div id="mainAccordion" data-children=".item">
     <div class="images">
       <table class="table">
         <thead>
@@ -22,13 +28,21 @@
         </tbody>
       </table>
     </div>
-    </div>
 </div>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
 <script src="./scripts/jquery-3.2.1.slim.min.js"></script>
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.5/esm/popper-utils.js" integrity="sha256-7I0drPLRByE3lk6nsWJhTMEeN9U+cpbkrv1Hrt6zV14=" crossorigin="anonymous"></script>
 <script src="./scripts/bootstrap.min.js"></script> -->
+<script src="./scripts/alasql.min.js"></script>
+<script src="./scripts/options/create.js"></script>
+<script src="./scripts/options/insert.js"></script>
+<script src="./scripts/options/select.js"></script>
 <script src="./scripts/show.js"></script>
+<style>
+.hidden {
+  display: none !important;
+}
+</style>
 </body>
 </html>

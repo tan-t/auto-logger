@@ -6,33 +6,45 @@ AutoLogger.pathname = new URL(location.href).pathname;
 
 AutoLogger.option = {};
 
+AutoLogger.configDlg_;
+
 AutoLogger.start = function (option) {
   console.log('loaded option.');
   console.log(option);
-  AutoLogger.option = option[AutoLogger.pathname];
+  AutoLogger.option = option;
+  AutoLogger.configDlg_ = new AutoLogger.ConfigDlg(option);
   AutoLogger.refreshListen();
-}
+};
+
+AutoLogger.detectUrlChange = function() {
+    chrome.runtime.sendMessage({type:'shot-request',
+    message:{
+      url:location.href,time:new Date(Date.now()).toLocaleString(),log:`${location.href}に遷移しました。`
+    }
+  },(res)=>{
+    console.log(res);
+  });
+};
+
 
 AutoLogger.refreshListen = function() {
   $(document).off('.autologger');
-
+  console.log(AutoLogger.option);
+  
   var storategyOpt = AutoLogger.option.storategyOpt || AutoLogger.DefaultStorategyOpt;
   var storategy = AutoLogger.Storategies[storategyOpt];
-  var listenTargetItemIds = AutoLogger.option.listenTargetItemIds;
-
-  $.each(Object.keys(listenTargetItemIds), (idx, event) => {
-    $(document).on(`${event}.autologger`, AutoLogger.ListenTargets, (e) => {
-      var $el = $(e.currentTarget);
-      var foundItem = listenTargetItemIds[event].find((item) => {
-        return storategy.check(e, item.id);
-      });
-      if (foundItem) {
-        $el.addClass('auto-logger-outline');
-        setTimeout(()=>{
-          chrome.runtime.sendMessage({type:'shot-request',
-          message:{
-            url:location.href,time:new Date(Date.now()).toLocaleString(),log:`${foundItem.name}に対して${event}が発火されました`
-          }
+    
+    AutoLogger.option.dtls.forEach(dtl=>{
+      let event = dtl.event;
+      $(document).on(`${event}.autologger`, AutoLogger.ListenTargets, (e) => {
+        var $el = $(e.currentTarget);
+        if(storategy.check(e,dtl.id)){
+          $el.addClass('auto-logger-outline');
+          setTimeout(()=>{
+            chrome.runtime.sendMessage({type:'shot-request',
+            message:{
+              url:location.href,time:new Date(Date.now()).toLocaleString(),log:`${dtl.name}に対して${event}が発火されました`
+            }
           },(res)=>{
             setTimeout(()=>{
               $el.removeClass('auto-logger-outline')
@@ -43,23 +55,50 @@ AutoLogger.refreshListen = function() {
       }
     });
   });
+  if(AutoLogger.option.auto_log_on_change === 'on' || AutoLogger.option.auto_log_on_change === true) {
+    $(document).on('change.autologger','input',(e)=>{
+      var id = storategy.createItem(e);
+      var value = $(e.currentTarget).val();
+      chrome.runtime.sendMessage({type:'log-request',
+      message:{
+        url:location.href,time:new Date(Date.now()).toLocaleString(),log:`${id}への変更イベント。値は${value}です。`
+      }
+    },(res)=>{
+      console.log(res);
+    });
+    });
+  }
+
+  if(AutoLogger.option.auto_shot_on_button === 'on' || AutoLogger.option.auto_shot_on_button === true) {
+    $(document).on('click.autologger','button,input[type="submit"],input[type="button"]',(e)=>{
+      var text = $(e.currentTarget).text();
+      if(!!$(e.currentTarget).attr('type') && text.length <= 0){
+        var text = $(e.currentTarget).val();
+      }
+      chrome.runtime.sendMessage({type:'shot-request',
+      message:{
+        url:location.href,time:new Date(Date.now()).toLocaleString(),log:`ボタン「${text}」をクリックしました。`
+      }
+    },(res)=>{
+      console.log(res);
+    });
+    });
+  }
 }
 
 new Promise(function (resolve, reject) {
-  var defaultOpt = {};
-  defaultOpt[AutoLogger.pathname] = {listenTargetItemIds:[]};
-  // chrome.storage.sync.get(defaultOpt, (res) => resolve(res));
-  AutoLogger.ConfigService.getOptionFromContentScript(AutoLogger.pathname,defaultOpt).then((res)=>resolve(res));
-}).then(AutoLogger.start);
+  var defaultOpt = $.extend(AutoLogger.ConfigContainer.getDefault(),{url:AutoLogger.pathname});
+      AutoLogger.ConfigService.getConfig(AutoLogger.pathname,defaultOpt).then((res)=>resolve(res));
+    }).then(AutoLogger.start);
 
 chrome.runtime.onMessage.addListener((request,sender,sendResponse)=>{
   console.log(request);
   switch (request.type) {
     case 'config':
-    if(!AutoLogger.isInDocument_){
-      AutoLogger.render(AutoLogger.option);
+    if(!AutoLogger.configDlg_.isInDocument_){
+      AutoLogger.configDlg_.render($('body'));
     } else {
-      $(AutoLogger.SELECTOR).trigger('finish');
+      AutoLogger.configDlg_.getElement().trigger('finish');
     }
       sendResponse({message:'ok'});
       break;
@@ -69,11 +108,6 @@ chrome.runtime.onMessage.addListener((request,sender,sendResponse)=>{
 });
 
 
-// $(document).on('click',(e)=>{
-
-// });
-
-// TODO refactor...
 AutoLogger.fromArrayToButton = function (arr) {
   return arr.map(opt => {
     return `<button type="button" class="btn btn-secondary auto-logger-config-btn auto-logger" data-id="${opt.id}" id="${opt.id}-mode">${opt.name}</button>`
@@ -99,25 +133,9 @@ AutoLogger.Template = `
   </div>
 </div>
 
-  <div class="form-group">
-    <label for="url-matcher">URL Matcher</label>
-    <input type="text" class="form-control auto-logger" id="url-matcher">
-  </div>
+    <div id="autologger-config-container-container">
 
-<div class="container" id="auto-logger-config-view">
-<table class="table">
-  <tbody>
-    <tr>
-      <td>
-        イベント
-      </td>
-      <td>
-        data-itemid
-      </td>
-    </tr>
-  </tbody>
-</table>
-</div>
+    </div>
 
 </div>
 
@@ -132,7 +150,7 @@ AutoLogger.INPUT_CSS = 'auto-logger';
 
 
 AutoLogger.ListenTargets = `${[
-  'input', 'button'
+  'input' // , 'button'
 ].join(',')}`;
 
 AutoLogger.Storategies = {
@@ -170,143 +188,137 @@ AutoLogger.Storategies = {
 
 }
 
-AutoLogger.enterDocument = function (option) {
-  var storategyOpt = option.storategyOpt || AutoLogger.DefaultStorategyOpt;
-  var storategy = AutoLogger.Storategies[storategyOpt];
+AutoLogger.ConfigDlg = function(config) {
+    this.isInDocument_ = false;
+    this.$element_;
+    this.$parent_;
+    this.storategyOpt_ = config.storategyOpt || AutoLogger.DefaultStorategyOpt;
+    this.storategy_ = AutoLogger.Storategies[this.storategyOpt_];
+    this.configContainer_;
+    this.children_ = [];
+    this.initialize(config);
+};
 
-  var listenTargetItemIds = AutoLogger.EventTypes.reduce((a, b) => {
-    a[b.id] = [];
-    return a;
-  }, {});
+AutoLogger.ConfigDlg.prototype.initialize = function(config) {
+    this.configContainer_ = new AutoLogger.ConfigContainer(config);
+    this.children_.push(this.configContainer_);
+};
 
-  $.extend(listenTargetItemIds,option.listenTargetItemIds);
+AutoLogger.ConfigDlg.prototype.render = function ($parent) {
+    this.$parent_ = $parent;
+    var div = AutoLogger.Template;
+    this.$element_ = $(div);
+    this.configContainer_.render(this.$element_.find('#autologger-config-container-container'));
+    this.$parent_.append(this.$element_);
+    this.enterDocument();
+}
 
-  var appendTr = function(eventDef,id,opt_name) {
-    var $configView = $('#auto-logger-config-view');
-    var $tr = $(`<tr class="auto-logger-config-row" data-id="${id}" data-eventid="${eventDef.id}"><td>${eventDef.name}</td><td>${id}</td><td><input type="text" class="form-control auto-logger auto-logger-name">
-    </td><td><button type="button" data-id="${id}" data-eventid="${eventDef.id}" class="auto-logger-config-del-btn btn btn-secondary auto-logger">削除</button></td></tr>`);
-    $configView.find('tbody').append($tr);
-    $tr.find('.auto-logger-name').val(opt_name || id);
-  };
+AutoLogger.ConfigDlg.prototype.enterDocument = function() {
+    this.children_.forEach(child=>child.enterDocument());
+    this.bindEvents_();
+    var url = new URL(location.href);
+    this.$element_.find('#url').val(`${url.pathname}`);
+    this.isInDocument_ = true;
+};
 
-  Object.keys(listenTargetItemIds).forEach((eventId)=>{
-    var eventDef = AutoLogger.EventTypes.find((o) => o.id == eventId);
-    listenTargetItemIds[eventId].forEach(item=>{
-      appendTr(eventDef,item.id,item.name);
+AutoLogger.ConfigDlg.prototype.getElement = function() {
+    return this.$element_;
+}
+
+AutoLogger.ConfigDlg.prototype.bindEvents_ = function() {
+    this.$element_.on('click.autologger', '#finish-config', (e) => {
+        this.finishConfig_();
+      });
+    
+      this.$element_.on('finish.autologger',  (e) => {
+        this.finishConfig_();
+      });
+      
+    this.$element_.on('click.autologger', '.auto-logger-config-btn', (e) => {
+       $(document).off('.config');
+       this.configMode_($(e.currentTarget).data('id'));
     });
-  });
+}
 
-  var check = function (e, eventId) {
-    return listenTargetItemIds[eventId].some((item) => {
-      return storategy.check(e, item.id);
+
+
+AutoLogger.ConfigDlg.prototype.check_ = function (e, eventId) {
+    return this.configContainer_.getValues().dtls.some((item) => {
+      return item.event === eventId && this.storategy_.check(e, item.id);
     })
-  };
+};
 
-  var configMode = function () {
-    var $overlay = $('#auto-logger-overlay');
-
-    var ignore = function (e) {
-      return $(e.currentTarget).hasClass(AutoLogger.INPUT_CSS);
-    }
-
-    $(document).on('mouseenter.config', AutoLogger.ListenTargets, (e) => {
-      if (ignore(e)) {
-        return;
-      }
-      $overlay.show();
-      var $el = $(e.currentTarget);
-      var offset = $el.offset();
-      $overlay.css('top', offset.top).css('left', offset.left).css('width', $el.width()).css('height', $el.height());
-    });
-
-    $(document).on('mouseleave.config', AutoLogger.ListenTargets, (e) => {
-      if (ignore(e)) {
-        return;
-      }
-      $overlay.hide();
-    });
-
-  }
-
-  var handleEventConfigMode = function (mode) {
-    var eventDef = AutoLogger.EventTypes.find((o) => o.id == mode);
-    var $configView = $('#auto-logger-config-view');
-    $(document).on('mouseup.config', AutoLogger.ListenTargets, (e) => {
-      if ($(e.currentTarget).hasClass(AutoLogger.INPUT_CSS)) {
-        return;
-      }
-      var id = storategy.createItem(e);
-      if (check(e, eventDef.id)) {
-        if (confirm(`この要素に対する${eventDef.name}イベントはすでにリッスン対象です。解除しますか？`)) {
-          var removeInx = listenTargetItemIds[eventDef.id].findIndex((item) => {
-            return id == item.id;
-          });
-          listenTargetItemIds[eventDef.id].splice(removeInx, 1);
-          $configView.find(`tr[data-id="${id}"][data-eventid="${eventDef.id}"]`).remove();
+AutoLogger.ConfigDlg.prototype.initializeConfigEl_ = function() {
+        var $overlay = $('#auto-logger-overlay');
+    
+        var ignore = function (e) {
+          return $(e.currentTarget).hasClass(AutoLogger.INPUT_CSS);
         }
-        return;
-      }
-      if (confirm(`この要素への${eventDef.name}イベントをリッスンしますか？`)) {
-        listenTargetItemIds[eventDef.id].push({id,name:id});
-        appendTr(eventDef,id);
-      }
-    });
-    configMode();
-  }
+    
+        $(document).on('mouseenter.config', AutoLogger.ListenTargets, (e) => {
+          if (ignore(e)) {
+            return;
+          }
+          $overlay.show();
+          var $el = $(e.currentTarget);
+          var offset = $el.offset();
+          $overlay.css('top', offset.top).css('left', offset.left).css('width', $el.width()).css('height', $el.height());
+        });
+    
+        $(document).on('mouseleave.config', AutoLogger.ListenTargets, (e) => {
+          if (ignore(e)) {
+            return;
+          }
+          $overlay.hide();
+        });
+};
 
-  $(AutoLogger.SELECTOR).on('click.autologger', '#finish-config', (e) => {
-    finishConfig();
-  });
+AutoLogger.ConfigDlg.prototype.configMode_ = function(mode) {
+        var eventDef = AutoLogger.EventTypes.find((o) => o.id == mode);
+        $(document).on('mouseup.config', AutoLogger.ListenTargets, (e) => {
+          if ($(e.currentTarget).hasClass(AutoLogger.INPUT_CSS)) {
+            return;
+          }
+          var id = this.storategy_.createItem(e);
+          if (this.check_(e, eventDef.id)) {
+            if (confirm(`この要素に対する${eventDef.name}イベントはすでにリッスン対象です。解除しますか？`)) {
+              this.configContainer_.deleteItem(eventDef.id,id);
+            }
+            return;
+          }
+          if (confirm(`この要素への${eventDef.name}イベントをリッスンしますか？`)) {
+            this.configContainer_.appendTr(eventDef,id);
+          }
+        });
+    this.initializeConfigEl_();
+}
 
-  $(AutoLogger.SELECTOR).on('finish.autologger',  (e) => {
-    finishConfig();
-  });
+AutoLogger.ConfigDlg.prototype.finishConfig_ = function() {
+    var model = this.configContainer_.getValues();
+    this.dispose();
+    AutoLogger.ConfigService.updateAnOption(model);
+    AutoLogger.option = model;
+    this.configContainer_.setItem(model);
+    AutoLogger.refreshListen();
+};
 
-  var finishConfig = function() {
+AutoLogger.ConfigDlg.prototype.exitDocument = function() {
+    this.unlistenEvents_();
+    this.isInDocument_ = false;
+};
+
+AutoLogger.ConfigDlg.prototype.unlistenEvents_ = function () {
     $(document).off('.config');
     $(document).off('.autologger');
-    $('#auto-logger-overlay').hide();
-    var matcher = $(AutoLogger.SELECTOR).find('#url-matcher').val();
-    var $configView = $('#auto-logger-config-view');
-    $configView.find('tr.auto-logger-config-row').each((inx,tr)=>{
-      var data = $(tr).data();
-      listenTargetItemIds[data.eventid].find(item=>{
-        return item.id == data.id;
-      }).name = $(tr).find('.auto-logger-name').val();
-    });
-    var innerModel = { matcher, listenTargetItemIds,storategyOpt };
-    // chrome.storage.sync.set(model);
-    AutoLogger.ConfigService.updateOptionFromContentScript(innerModel);
-    $(AutoLogger.SELECTOR).remove();
-    AutoLogger.option = innerModel;
-    AutoLogger.refreshListen();
-    AutoLogger.isInDocument_ = false;
-  }
+};
+
+AutoLogger.ConfigDlg.prototype.dispose = function() {
+    if(this.isInDocument_) {
+        this.exitDocument();
+    }
+    this.children_.forEach(child=>child.dispose());
+    this.$element_.remove();
+};
 
 
-
-  $(AutoLogger.SELECTOR).on('click.autologger', '.auto-logger-config-btn', (e) => {
-    $(document).off('.config');
-    handleEventConfigMode($(e.currentTarget).data('id'));
-  });
-
-  $(AutoLogger.SELECTOR).on('click.autologger', '.auto-logger-config-del-btn', (e) => {
-    var data = $(e.currentTarget).data();
-    var removeInx = listenTargetItemIds[data.eventid].findIndex((item) => {
-      return data.id == item.id;
-    });
-    listenTargetItemIds[data.eventid].splice(removeInx, 1);
-    $(e.currentTarget).parents('tr').remove();
-  });
-
-  var url = new URL(location.href);
-  $(AutoLogger.SELECTOR).find('#url-matcher').val(`${url.pathname}`);
-  AutoLogger.isInDocument_ = true;
-}
-
-AutoLogger.render = function (option) {
-  $('body').append($(AutoLogger.Template));
-  AutoLogger.enterDocument(option);
-}
-
-AutoLogger.isInDocument_ = false;
+AutoLogger.detectUrlChange();

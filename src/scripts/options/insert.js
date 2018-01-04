@@ -13,8 +13,8 @@ AutoLogger.Insert.prototype.value = function (valueObj) {
     var givenColumns = this.columns_.filter(colDef => {
         return colDef.columnid.toUpperCase() in insertableObj;
     });
-    return `INSERT INTO ${this.table_} (${givenColumns.map(colDef => colDef.columnid).join(',')}) 
-        VALUES (${givenColumns.map(colDef => AutoLogger.Insert.ColFunc[colDef.dbtypeid.toUpperCase()](insertableObj[colDef.columnid.toUpperCase()])).join(',')})`;
+    return {sql:`INSERT INTO ${this.table_} (${givenColumns.map(colDef => colDef.columnid).join(',')}) 
+        VALUES (${givenColumns.map((col)=>'?').join(',')})`,param:givenColumns.map(colDef => AutoLogger.Insert.ColFunc[colDef.dbtypeid](insertableObj[colDef.columnid.toUpperCase()]))};
 };
 
 AutoLogger.Insert.ColFunc = {
@@ -26,6 +26,9 @@ AutoLogger.Insert.ColFunc = {
     },
     BOOLEAN: function (value) {
         return value === true;
+    },
+    Date : function(value) {
+        return value;
     }
 };
 

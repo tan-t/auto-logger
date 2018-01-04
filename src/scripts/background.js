@@ -31,6 +31,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
           sendResponse({message:'shot'});
         });
         break;
+        case 'log-request':
+        var fromTabId = sender.tab.id;
+        if(!managedTabMap[fromTabId]){
+          sendResponse();
+          return;
+        }
+        chrome.tabs.sendMessage(managedTabMap[fromTabId],{type:'log',message:request.message},(res)=>{
+          sendResponse({message:'logged'});
+        });
       default:
         sendResponse({ message: "unknown" });
     }

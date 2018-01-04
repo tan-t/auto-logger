@@ -18,12 +18,16 @@ AutoLogger.Select.prototype.where = function(whereObj) {
         return colDef.columnid.toUpperCase() in queriableObj;
     });
 
-    var where = queryColumns.map(colDef=>{
+    this.where_ = queryColumns.map(colDef=>{
         return `(${colDef.columnid.toUpperCase()} = ${AutoLogger.Select.ColFunc[colDef.dbtypeid.toUpperCase()](queriableObj[colDef.columnid.toUpperCase()])})`;
     }).join(' AND ');
 
-    return `SELECT * FROM ${this.table_} WHERE ${where}`;
+    return this;
 };
+
+AutoLogger.Select.prototype.toString = function() {
+    return `SELECT * FROM ${this.table_} WHERE ${this.where_}`;
+}
 
 AutoLogger.Select.ColFunc = {
     INT: function (value) {
